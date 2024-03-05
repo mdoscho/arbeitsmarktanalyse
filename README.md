@@ -41,8 +41,9 @@ abgebildet.
 Spreadsheets to Code (Kapitel [Geospatial Data and GeoJSON](https://handsondataviz.org/geojson.html)). O'Reilly
 > - GeoJSON-Specifications [RFC7946](https://datatracker.ietf.org/doc/html/rfc7946)
 
-> ❗ Es ist **erforderlich** GeoJSON-Dateien über eine URL aufzurufen die mit https:// beginnt.
-> CORS muss aktiviert sein. Siehe dazu [Options for hosting GeoJSON files](https://icon-map.com/blogs/blogs.html#hostinggeojson).
+> ⚠️ Es ist **erforderlich** GeoJSON-Dateien über eine URL aufzurufen die mit https:// beginnt.
+> [CORS](https://developer.mozilla.org/en-US/docs/Glossary/CORS) muss aktiviert sein.
+> Siehe dazu [Options for hosting GeoJSON files](https://icon-map.com/blogs/blogs.html#hostinggeojson).
 
 Quelle der Karten sind die kostenfreien Geodaten des Bundesamtes für Kartographie und Geodäsie,
 insbesondere die [Verwaltungsgebiete 1:5 000 000](https://gdz.bkg.bund.de/index.php/default/open-data/verwaltungsgebiete-1-5-000-000-stand-01-01-vg5000-01-01.html).
@@ -54,7 +55,7 @@ Um den Datesatz herunterzuladen:
 
 Extrahiere die Dateien.
 
-> ❗ Notwendige Informationen sind in der entsprechenden Dokumentation enthalten. Zu finden im Verzeichnis *dokumentation/vg500.pdf*.
+> ⚠️ Notwendige Informationen sind in der entsprechenden Dokumentation enthalten. Zu finden im Verzeichnis *dokumentation/vg500.pdf*.
 
 #### Konvertierung der Shape-Datei mit Mapshaper
 
@@ -115,7 +116,7 @@ features* von Mapshaper. Klicke dazu auf den Pfeil unter dem Minus-Zeichen (link
 1. Daten stammen aus der DEKRA Akademie Homepage.
 2. Breiten- und Längengrad (Latidude und Longidude) mithilfe von [LanLong.net](https://www.latlong.net/).
 
-> ❗ TO-DO: In Zukunft mit Python, s. [StackOverflow](https://stackoverflow.com/questions/25888396/how-to-get-latitude-longitude-with-python#25890585)
+> 📝 TO-DO: In Zukunft mit Python, s. [StackOverflow](https://stackoverflow.com/questions/25888396/how-to-get-latitude-longitude-with-python#25890585)
 
 > ⚠️ Breiten- und Längengrad sind Dezimalzahlen mit entsprechenden Dezimaltrennzeichen einen Punkt (.) und **nicht** wie in Deutschland üblich einem Komma.
 
@@ -126,7 +127,9 @@ Arbeitsmarktreport - Länder, Kreise, Regionaldirektionen und Agenturen für Arb
 [1](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Statistiken-nach-Regionen/Statistiken-nach-Regionen-Nav.html)
 [2](https://statistik.arbeitsagentur.de/SiteGlobals/Forms/Suche/Einzelheftsuche_Formular.html?nn=15024&topic_f=amr-amr&dateOfRevision=202201-202401)
 
-TO-DO: Automatisierte Extraktion mit Python.
+> 📝 TO-DO: Automatisierte Extraktion mit Python.
+
+> ⚠️ Im Datensatz wird das Labor-Force-Konzept der International Labour Organization **Erwerbsperson** verwendet, anstatt die von der Agentur der Arbeit benutzten Begriffe *sozialversicherungspflichtige Beschäftigung* oder *Arbeitslos*. Siehe [Gabler Wirtschaftslexikon](https://wirtschaftslexikon.gabler.de/definition/erwerbspersonen-33596) und [Bundeszentrale für politiche Bildung](https://www.bpb.de/kurz-knapp/lexika/lexikon-der-wirtschaft/19248/erwerbspersonen/).
 
 ### Statistisches Bundesamt
 
