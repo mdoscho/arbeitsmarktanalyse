@@ -55,7 +55,7 @@ Um den Datesatz herunterzuladen:
 
 Extrahiere die Dateien.
 
-> ⚠️ Notwendige Informationen sind in der entsprechenden Dokumentation enthalten. Zu finden im Verzeichnis *dokumentation/vg500.pdf*.
+> ⚠️ Notwendige Informationen sind in der entsprechenden Dokumentation enthalten. Zu finden im Verzeichnis *./dokumentation/vg500.pdf*.
 
 #### Konvertierung der Shape-Datei mit Mapshaper
 
@@ -111,6 +111,18 @@ Wiederhole die Schritte 1 bis einschließlich 6 für die Dateien *VG5000_LAN* (L
 > 💡 Auswahl bestimmter Flächen, wie z. B. aller Landkreise in Hessen, ist möglich mithilfe des *select
 features* von Mapshaper. Klicke dazu auf den Pfeil unter dem Minus-Zeichen (links).
 
+> ⚠️ Bestimmte Landkreise und kreisfreie Städte haben denselben Namen, z. B. Kassel.
+> Dies **muss** in der GeoJSON-Datei geändert werden damit die entsprechenden Flächen auf der Karte aktiviert werden können.
+> Zum Beispiel 'Kassel' (kreisfreie Stadt) wird durch 'Kassel, Stadt' ersetzt. Um die Anwendung zu vereinfachen, werden die Namen
+> aller kreisfreien Städte mit der Zeichenkette ', Stadt' ergänzt.
+> Dies gilt auch für die entsprechenden Spalten der Excell-Dateien, mithilfe der Power Query Formel:
+>
+> ```m
+> #"Replaced Values" = Table.ReplaceValue(#"Changed Type", each [Name], 
+> each if [Bezeichnung] = "Kreisfreie Stadt" then Text.Combine({[Name], "Stadt"}, ", ") else [Name], Replacer.ReplaceText, {"Name"})
+> ```
+> Siehe [Erstellen von Power Query-Formeln in Excel](https://support.microsoft.com/de-de/office/erstellen-von-power-query-formeln-in-excel-6bc50988-022b-4799-a709-f8aafdee2b2f)
+
 ### DEKRA Akademie Standorte
 
 1. Daten stammen aus der DEKRA Akademie Homepage.
@@ -127,9 +139,9 @@ Arbeitsmarktreport - Länder, Kreise, Regionaldirektionen und Agenturen für Arb
 [1](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Statistiken-nach-Regionen/Statistiken-nach-Regionen-Nav.html)
 [2](https://statistik.arbeitsagentur.de/SiteGlobals/Forms/Suche/Einzelheftsuche_Formular.html?nn=15024&topic_f=amr-amr&dateOfRevision=202201-202401)
 
-> 📝 TO-DO: Automatisierte Extraktion mit Python.
+> 📝 TO-DO: Automatisierte Extraktion und Bearbeitung mit Python.
 
-> ⚠️ Im Datensatz wird das Labor-Force-Konzept der International Labour Organization **Erwerbsperson** verwendet, anstatt die von der Agentur der Arbeit benutzten Begriffe *sozialversicherungspflichtige Beschäftigung* oder *Arbeitslos*. Siehe [Gabler Wirtschaftslexikon](https://wirtschaftslexikon.gabler.de/definition/erwerbspersonen-33596) und [Bundeszentrale für politiche Bildung](https://www.bpb.de/kurz-knapp/lexika/lexikon-der-wirtschaft/19248/erwerbspersonen/).
+> ⚠️ Im Datensatz wird das Labor-Force-Konzept der International Labour Organization **Erwerbsperson** verwendet. Siehe [Gabler Wirtschaftslexikon](https://wirtschaftslexikon.gabler.de/definition/erwerbspersonen-33596) und [Bundeszentrale für politiche Bildung](https://www.bpb.de/kurz-knapp/lexika/lexikon-der-wirtschaft/19248/erwerbspersonen/).
 
 ### Statistisches Bundesamt
 
@@ -146,7 +158,7 @@ Icon Map kann entweder:
 Importiere die GeoJSON-Dateien *bundeslaender* und *landkreise_kreisfreie_staedte*. Im Home Menü unter
 Get Data > More > JSON.
 
-Verwende die nachfolgenden Power Query M "Formeln":
+Verwende die nachfolgenden Power Query M Queries:
 
 ```m
 let
@@ -177,7 +189,7 @@ let
     #"Changed Type" = Table.TransformColumnTypes(#"Expanded features.properties",{{"type", type text}, {"features.type", type text}, {"features.geometry.type", type text}, {"features.geometry.coordinates", type any}, {"features.properties.OBJID", type text}, {"features.properties.BEGINN", type datetime}, {"features.properties.ADE", Int64.Type}, {"features.properties.GF", Int64.Type}, {"features.properties.BSG", Int64.Type}, {"features.properties.ARS", type text}, {"features.properties.AGS", Int64.Type}, {"features.properties.SDV_ARS", Int64.Type}, {"features.properties.GEN", type text}, {"features.properties.BEZ", type text}, {"features.properties.IBZ", Int64.Type}, {"features.properties.BEM", type text}, {"features.properties.NBD", type text}, {"features.properties.SN_L", Int64.Type}, {"features.properties.SN_R", Int64.Type}, {"features.properties.SN_K", Int64.Type}, {"features.properties.SN_V1", Int64.Type}, {"features.properties.SN_V2", Int64.Type}, {"features.properties.SN_G", Int64.Type}, {"features.properties.FK_S3", type text}, {"features.properties.NUTS", type text}, {"features.properties.ARS_0", Int64.Type}, {"features.properties.AGS_0", Int64.Type}, {"features.properties.WSK", type datetime}}),
     #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"type", "features.type", "features.geometry.type", "features.geometry.coordinates", "features.properties.OBJID", "features.properties.BEGINN", "features.properties.ADE", "features.properties.GF", "features.properties.BSG", "features.properties.AGS", "features.properties.SDV_ARS", "features.properties.IBZ", "features.properties.BEM", "features.properties.NBD", "features.properties.SN_L", "features.properties.SN_R", "features.properties.SN_K", "features.properties.SN_V1", "features.properties.SN_V2", "features.properties.SN_G", "features.properties.FK_S3", "features.properties.NUTS", "features.properties.ARS_0", "features.properties.AGS_0", "features.properties.WSK"}),
     #"Removed Duplicates" = Table.Distinct(#"Removed Columns", {"features.properties.ARS"}),
-    #"Renamed Columns" = Table.RenameColumns(#"Removed Duplicates",{{"features.properties.ARS", "KreisID"}, {"features.properties.GEN", "Name"}, {"features.properties.BEZ", "Bezeichnung"}})
+    #"Renamed Columns" = Table.RenameColumns(#"Removed Duplicates",{{"features.properties.ARS", "KreisID"}, {"features.properties.GEN", "Name"}, {"features.properties.BEZ", "Bezeichnung"}}),
     #"Added Custom" = Table.AddColumn(#"Renamed Columns", "BundeslandID", each Text.Range([KreisID], 0, 2))
 in
     #"Added Custom"
