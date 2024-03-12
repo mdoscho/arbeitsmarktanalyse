@@ -45,8 +45,10 @@ Spreadsheets to Code (Kapitel [Geospatial Data and GeoJSON](https://handsondatav
 > [CORS](https://developer.mozilla.org/en-US/docs/Glossary/CORS) muss aktiviert sein.
 > Siehe dazu [Options for hosting GeoJSON files](https://icon-map.com/blogs/blogs.html#hostinggeojson).
 
-Quelle der Karten sind die kostenfreien Geodaten des Bundesamtes für Kartographie und Geodäsie,
-insbesondere die [Verwaltungsgebiete 1:5 000 000](https://gdz.bkg.bund.de/index.php/default/open-data/verwaltungsgebiete-1-5-000-000-stand-01-01-vg5000-01-01.html).
+Quellenvermerk:
+1. Geometrische Grundlage: [Verwaltungsgebiete 1:5 000 000](https://gdz.bkg.bund.de/index.php/default/open-data/verwaltungsgebiete-1-5-000-000-stand-01-01-vg5000-01-01.html), 
+01.01.2023 © GeoBasis-DE/Bundesamt für Kartographie und Geodäsie
+2. Lizenz: [Datenlizenz Deutschland – Namensnennung – Version 2.0](www.govdata.de/dl-de/by-2-0)
 
 Um den Datesatz herunterzuladen:
 
@@ -115,13 +117,6 @@ features* von Mapshaper. Klicke dazu auf den Pfeil unter dem Minus-Zeichen (link
 > Dies **muss** in der GeoJSON-Datei geändert werden damit die entsprechenden Flächen auf der Karte aktiviert werden können.
 > Zum Beispiel 'Kassel' (kreisfreie Stadt) wird durch 'Kassel, Stadt' ersetzt. Um die Anwendung zu vereinfachen, werden die Namen
 > aller kreisfreien Städte mit der Zeichenkette ', Stadt' ergänzt.
-> Dies gilt auch für die entsprechenden Spalten der Excell-Dateien, mithilfe der Power Query Formel:
->
-> ```m
-> #"Replaced Values" = Table.ReplaceValue(#"Changed Type", each [Name], 
-> each if [Bezeichnung] = "Kreisfreie Stadt" then Text.Combine({[Name], "Stadt"}, ", ") else [Name], Replacer.ReplaceText, {"Name"})
-> ```
-> Siehe [Erstellen von Power Query-Formeln in Excel](https://support.microsoft.com/de-de/office/erstellen-von-power-query-formeln-in-excel-6bc50988-022b-4799-a709-f8aafdee2b2f)
 
 ### DEKRA Akademie Standorte
 
@@ -133,6 +128,80 @@ features* von Mapshaper. Klicke dazu auf den Pfeil unter dem Minus-Zeichen (link
 > ⚠️ Breiten- und Längengrad sind Dezimalzahlen mit entsprechenden Dezimaltrennzeichen einen Punkt (.) und **nicht** wie in Deutschland üblich einem Komma.
 
 ### Agentur für Arbeit
+
+Datenquelle: Beschäftigte nach Berufen am Arbeitsort der
+[Datenbanken Beschäftigungsstatistik](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Interaktive-Statistiken/Datenbanken/Datenbanken-BST-Nav.html)
+
+Auswahl der Dimensionen und Kennzahlen:
+
+Dimensionen:
+
+- Stichtag
+- Bundesland
+- Kreis
+- Berufssektor
+- Berufssegment
+- Berufshauptgruppe - 2 Steller
+- Alter - Jahresgruppen 10er
+
+Kennzahl:
+
+- Sozialversicherungspflichtig Beschäftigte
+
+Wenn in den Dimensionen das Feld "Keine Angabe" oder "Keine Zuordnung möglich" existiert, dieses deaktivieren.
+Zum Schluß, die Summe auswählen und den Datensatz als CSV herunterladen.
+
+Den Datensatz anschließend in Power BI importieren und nachfolgende Power Query einbinden:
+
+```m
+let
+    // Change path accordingly.
+    Source = Csv.Document(File.Contents("path\to\CSV"),[Delimiter=";", Columns=11, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+        #"Changed Type" = Table.TransformColumnTypes(Source,{
+        {"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}, {"Column5", type text}, {"Column6", type text}, 
+        {"Column7", type text}, {"Column8", type text}, {"Column9", type text}, {"Column10", type text}, {"Column11", type text}
+        }),
+    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{
+        {"Column1", "BundeslandID"}, {"Column2", "Bundesland"}, {"Column3", "KreisID"}, {"Column4", "Kreis"}, {"Column5", "BerufssektorID"}, 
+        {"Column6", "Berufssektor"}, {"Column7", "BerufssegmentID"}, {"Column8", "Berufssegment"}, {"Column9", "Berufshauptgruppe2erID"}, 
+        {"Column10", "Berufshauptgruppe"}, {"Column11", "SozialversicherungspflichtigBeschäftigte"}
+        }),
+    #"Trimmed Text" = Table.TransformColumns(#"Renamed Columns",{
+        {"BundeslandID", Text.Trim, type text}, {"Bundesland", Text.Trim, type text}, {"KreisID", Text.Trim, type text}, {"Kreis", Text.Trim, type text},
+        {"BerufssektorID", Text.Trim, type text}, {"Berufssektor", Text.Trim, type text}, {"BerufssegmentID", Text.Trim, type text}, 
+        {"Berufssegment", Text.Trim, type text}, {"Berufshauptgruppe2erID", Text.Trim, type text}, {"Berufshauptgruppe", Text.Trim, type text}, 
+        {"SozialversicherungspflichtigBeschäftigte", Text.Trim, type text}
+        }),
+    #"Replaced Value" = Table.ReplaceValue(#"Trimmed Text", each [BundeslandID], each if Text.StartsWith([BundeslandID], "Summe:") then "" else [BundeslandID], Replacer.ReplaceValue, {"BundeslandID"}),
+    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value", ".", "", Replacer.ReplaceText, {"SozialversicherungspflichtigBeschäftigte"}),    
+    #"Filtered Rows" = Table.SelectRows(#"Replaced Value1", each ([BundeslandID] <> "")),
+    #"Removed Bottom Rows" = Table.RemoveLastN(#"Filtered Rows",2),
+    #"Added Custom" = Table.AddColumn(#"Removed Bottom Rows", "Stichtag", each null),
+    #"Replaced Value2" = Table.ReplaceValue(#"Added Custom", null, each if [BundeslandID] = "Stichtag" then [Bundesland] else null, Replacer.ReplaceValue, {"Stichtag"}),
+    #"Filled Down" = Table.FillDown(#"Replaced Value2",{"Stichtag"}),
+    #"Added Custom1" = Table.AddColumn(#"Filled Down", "Gebietsstand", each null),
+    #"Replaced Value3" = Table.ReplaceValue(#"Added Custom1", null, each if [BundeslandID] = "Gebietsstand" then [Bundesland] else null, Replacer.ReplaceValue, {"Gebietsstand"}),
+    #"Filled Down1" = Table.FillDown(#"Replaced Value3",{"Gebietsstand"}),
+    #"Removed Top Rows" = Table.Skip(#"Filled Down1", 11),
+    #"Replaced Value4" = Table.ReplaceValue(#"Removed Top Rows", ", Wissenschaftsstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value5" = Table.ReplaceValue(#"Replaced Value4", ", Landeshauptstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value6" = Table.ReplaceValue(#"Replaced Value5", "documenta-Stadt", "Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value7" = Table.ReplaceValue(#"Replaced Value6", ", Universitätsstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value8" = Table.ReplaceValue(#"Replaced Value7", ", Hansestadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value9" = Table.ReplaceValue(#"Replaced Value8", ", Freie und Hansestadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value10" = Table.ReplaceValue(#"Replaced Value9", ", Stadt der FernUniversität", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value11" = Table.ReplaceValue(#"Replaced Value10", ", Hanse- und Universitätsstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value12" = Table.ReplaceValue(#"Replaced Value11", ", kreisfreie Stadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value13" = Table.ReplaceValue(#"Replaced Value12", "Landkreis ", "", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value14" = Table.ReplaceValue(#"Replaced Value13", "x", "-1", Replacer.ReplaceText, {"SozialversicherungspflichtigBeschäftigte"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Replaced Value14",{
+        {"SozialversicherungspflichtigBeschäftigte", Int64.Type}
+        })
+in
+    #"Changed Type1""
+```
+
+Siehe unbedigt [Zeichenerklärung](https://statistik.arbeitsagentur.de/DE/Statischer-Content/Grundlagen/Definitionen/Zeichenerklaerung.html?nn=6698).
 
 Arbeitsmarktreport - Länder, Kreise, Regionaldirektionen und Agenturen für Arbeit
 
@@ -197,5 +266,21 @@ in
 Der amtliche Regionalschlüssel (ARS) wird zum verlinken der Tabellen verwendet. Siehe Kapitel 2.1 der Dokumentation.
 
 In *Table View* die **Data Category** der Spalte *Name* zu *State or Province* und *County* entsprechend ändern.
+
+Außerdem,
+
+```m
+let
+    Source = Excel.Workbook(File.Contents("path\to\erwerbspersonen.xlsx"), null, true),
+    Table1_Table = Source{[Item="Table1",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table1_Table,{
+        {"Bundesland", type text}, {"KreisID", type text}, {"Name", type text}, {"Bezeichnung", type text}, {"Datum", type date}, 
+        {"Erwerbstätigleit", type text}, {"Insgesamt", Int64.Type}, {"Männer", Int64.Type}, {"Frauen", Int64.Type}, 
+        {"15 bis unter 25 Jahre", Int64.Type}, {"25 bis unter 55 Jahre", Int64.Type}, {"55 Jahre bis Regelaltersgrenze", Int64.Type}, 
+        {"Vollzeit", Int64.Type}, {"Teilzeit", Int64.Type}, {"Deutsche", Int64.Type}, {"Ausländer", Int64.Type}}),
+    #"Replaced Values" = Table.ReplaceValue(#"Changed Type", each [Name], each if [Bezeichnung] = "Kreisfreie Stadt" then Text.Combine({[Name], "Stadt"}, ", ") else [Name], Replacer.ReplaceText, {"Name"})
+in
+    #"Replaced Values"
+```
 
 ## FAQ
