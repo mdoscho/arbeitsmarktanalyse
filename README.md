@@ -142,6 +142,7 @@ Dimensionen:
 - Berufssektor
 - Berufssegment
 - Berufshauptgruppe - 2 Steller
+- Anforderungsniveau
 - Alter - Jahresgruppen 10er
 
 Kennzahl:
@@ -154,35 +155,35 @@ Zum Schluß, die Summe auswählen und den Datensatz als CSV herunterladen.
 Den Datensatz anschließend in Power BI importieren und nachfolgende Power Query einbinden:
 
 ```m
-let
-    // Change path accordingly.
-    Source = Csv.Document(File.Contents("path\to\CSV"),[Delimiter=";", Columns=11, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+// let
+//        Source = Csv.Document(File.Contents("path\to\data.csv"),[Delimiter=";", Columns=13, Encoding=65001, QuoteStyle=QuoteStyle.None]),
         #"Changed Type" = Table.TransformColumnTypes(Source,{
         {"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}, {"Column5", type text}, {"Column6", type text}, 
-        {"Column7", type text}, {"Column8", type text}, {"Column9", type text}, {"Column10", type text}, {"Column11", type text}
+        {"Column7", type text}, {"Column8", type text}, {"Column9", type text}, {"Column10", type text}, {"Column11", type text}, {"Column12", type text},
+        {"Column13", type text}
         }),
     #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{
         {"Column1", "BundeslandID"}, {"Column2", "Bundesland"}, {"Column3", "KreisID"}, {"Column4", "Kreis"}, {"Column5", "BerufssektorID"}, 
         {"Column6", "Berufssektor"}, {"Column7", "BerufssegmentID"}, {"Column8", "Berufssegment"}, {"Column9", "Berufshauptgruppe2erID"}, 
-        {"Column10", "Berufshauptgruppe"}, {"Column11", "SozialversicherungspflichtigBeschäftigte"}
+        {"Column10", "Berufshauptgruppe"}, {"Column11", "Anforderungsniveau"}, {"Column12", "Altersgruppe"}, {"Column13", "SozialversicherungspflichtigBeschäftigte"}
         }),
     #"Trimmed Text" = Table.TransformColumns(#"Renamed Columns",{
         {"BundeslandID", Text.Trim, type text}, {"Bundesland", Text.Trim, type text}, {"KreisID", Text.Trim, type text}, {"Kreis", Text.Trim, type text},
         {"BerufssektorID", Text.Trim, type text}, {"Berufssektor", Text.Trim, type text}, {"BerufssegmentID", Text.Trim, type text}, 
         {"Berufssegment", Text.Trim, type text}, {"Berufshauptgruppe2erID", Text.Trim, type text}, {"Berufshauptgruppe", Text.Trim, type text}, 
-        {"SozialversicherungspflichtigBeschäftigte", Text.Trim, type text}
+        {"Anforderungsniveau", Text.Trim, type text}, {"Altersgruppe", Text.Trim, type text}, {"SozialversicherungspflichtigBeschäftigte", Text.Trim, type text}
         }),
     #"Replaced Value" = Table.ReplaceValue(#"Trimmed Text", each [BundeslandID], each if Text.StartsWith([BundeslandID], "Summe:") then "" else [BundeslandID], Replacer.ReplaceValue, {"BundeslandID"}),
     #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value", ".", "", Replacer.ReplaceText, {"SozialversicherungspflichtigBeschäftigte"}),    
     #"Filtered Rows" = Table.SelectRows(#"Replaced Value1", each ([BundeslandID] <> "")),
-    #"Removed Bottom Rows" = Table.RemoveLastN(#"Filtered Rows",2),
+    #"Removed Bottom Rows" = Table.RemoveLastN(#"Filtered Rows", 2),
     #"Added Custom" = Table.AddColumn(#"Removed Bottom Rows", "Stichtag", each null),
     #"Replaced Value2" = Table.ReplaceValue(#"Added Custom", null, each if [BundeslandID] = "Stichtag" then [Bundesland] else null, Replacer.ReplaceValue, {"Stichtag"}),
     #"Filled Down" = Table.FillDown(#"Replaced Value2",{"Stichtag"}),
     #"Added Custom1" = Table.AddColumn(#"Filled Down", "Gebietsstand", each null),
     #"Replaced Value3" = Table.ReplaceValue(#"Added Custom1", null, each if [BundeslandID] = "Gebietsstand" then [Bundesland] else null, Replacer.ReplaceValue, {"Gebietsstand"}),
     #"Filled Down1" = Table.FillDown(#"Replaced Value3",{"Gebietsstand"}),
-    #"Removed Top Rows" = Table.Skip(#"Filled Down1", 11),
+    #"Removed Top Rows" = Table.Skip(#"Filled Down1", 12),
     #"Replaced Value4" = Table.ReplaceValue(#"Removed Top Rows", ", Wissenschaftsstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
     #"Replaced Value5" = Table.ReplaceValue(#"Replaced Value4", ", Landeshauptstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
     #"Replaced Value6" = Table.ReplaceValue(#"Replaced Value5", "documenta-Stadt", "Stadt", Replacer.ReplaceText, {"Kreis"}),
@@ -193,29 +194,19 @@ let
     #"Replaced Value11" = Table.ReplaceValue(#"Replaced Value10", ", Hanse- und Universitätsstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
     #"Replaced Value12" = Table.ReplaceValue(#"Replaced Value11", ", kreisfreie Stadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
     #"Replaced Value13" = Table.ReplaceValue(#"Replaced Value12", "Landkreis ", "", Replacer.ReplaceText, {"Kreis"}),
-    #"Replaced Value14" = Table.ReplaceValue(#"Replaced Value13", "x", "-1", Replacer.ReplaceText, {"SozialversicherungspflichtigBeschäftigte"}),
-    #"Changed Type1" = Table.TransformColumnTypes(#"Replaced Value14",{
+    #"Replaced Value14" = Table.ReplaceValue(#"Replaced Value13", ", Klingenstadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value15" = Table.ReplaceValue(#"Replaced Value14", " (Oldenburg), Stadt", ", Stadt", Replacer.ReplaceText, {"Kreis"}),
+    #"Replaced Value16" = Table.ReplaceValue(#"Replaced Value15", "x", "-1", Replacer.ReplaceText, {"SozialversicherungspflichtigBeschäftigte"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Replaced Value16",{
         {"SozialversicherungspflichtigBeschäftigte", Int64.Type}
-        })
+        }) 
 in
-    #"Changed Type1""
+    #"Changed Type1"
 ```
 
-Siehe unbedigt [Zeichenerklärung](https://statistik.arbeitsagentur.de/DE/Statischer-Content/Grundlagen/Definitionen/Zeichenerklaerung.html?nn=6698).
+Erklärungen zu den im Datensatz der Bundesagentur für Arbeit verwendeten Zeichen sind [hier](https://statistik.arbeitsagentur.de/DE/Statischer-Content/Grundlagen/Definitionen/Zeichenerklaerung.html?nn=6698) zu finden.
 
-Arbeitsmarktreport - Länder, Kreise, Regionaldirektionen und Agenturen für Arbeit
-
-[1](https://statistik.arbeitsagentur.de/DE/Navigation/Statistiken/Statistiken-nach-Regionen/Statistiken-nach-Regionen-Nav.html)
-[2](https://statistik.arbeitsagentur.de/SiteGlobals/Forms/Suche/Einzelheftsuche_Formular.html?nn=15024&topic_f=amr-amr&dateOfRevision=202201-202401)
-
-> 📝 TO-DO: Automatisierte Extraktion und Bearbeitung mit Python.
-
-> ⚠️ Im Datensatz wird das Labor-Force-Konzept der International Labour Organization **Erwerbsperson** verwendet. Siehe [Gabler Wirtschaftslexikon](https://wirtschaftslexikon.gabler.de/definition/erwerbspersonen-33596) und [Bundeszentrale für politiche Bildung](https://www.bpb.de/kurz-knapp/lexika/lexikon-der-wirtschaft/19248/erwerbspersonen/).
-
-### Statistisches Bundesamt
-
-[Kreisfreie Städte und Landkreise am 31.12.2022](https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/Administrativ/04-kreise.html)
-[Regionaldatenbank Deutschland](https://www.regionalstatistik.de/genesis/online?operation=previous&levelindex=0&step=0&titel=&levelid=1708952700718&acceptscookies=false)
+Das relevante Glossar [hier](https://statistik.arbeitsagentur.de/DE/Navigation/Grundlagen/Definitionen/Glossar/Glossar-Nav.html).
 
 ## Power BI
 
@@ -224,63 +215,13 @@ Icon Map kann entweder:
 - direkt aus AppSource [importiert](https://learn.microsoft.com/de-de/power-bi/developer/visuals/import-visual#import-a-power-bi-visual-directly-from-appsource) werden, oder
 - die neueste -test- Version der App in Power BI Desktop [installiert](https://learn.microsoft.com/de-de/power-bi/developer/visuals/import-visual#import-a-visual-file-from-your-local-computer-into-power-bi) werden.
 
-Importiere die GeoJSON-Dateien *bundeslaender* und *landkreise_kreisfreie_staedte*. Im Home Menü unter
-Get Data > More > JSON.
 
-Verwende die nachfolgenden Power Query M Queries:
+## Unicode
 
-```m
-let
-    Source = Json.Document(File.Contents("\path\to\bundeslaender.json")),
-    #"Converted to Table" = Table.FromRecords({Source}),
-    #"Expanded features" = Table.ExpandListColumn(#"Converted to Table", "features"),
-    #"Expanded features1" = Table.ExpandRecordColumn(#"Expanded features", "features", {"type", "geometry", "properties"}, {"features.type", "features.geometry", "features.properties"}),
-    #"Expanded features.geometry" = Table.ExpandRecordColumn(#"Expanded features1", "features.geometry", {"type", "coordinates"}, {"features.geometry.type", "features.geometry.coordinates"}),
-    #"Expanded features.geometry.coordinates" = Table.ExpandListColumn(#"Expanded features.geometry", "features.geometry.coordinates"),
-    #"Expanded features.properties" = Table.ExpandRecordColumn(#"Expanded features.geometry.coordinates", "features.properties", {"OBJID", "BEGINN", "ADE", "GF", "BSG", "ARS", "AGS", "SDV_ARS", "GEN", "BEZ", "IBZ", "BEM", "NBD", "SN_L", "SN_R", "SN_K", "SN_V1", "SN_V2", "SN_G", "FK_S3", "NUTS", "ARS_0", "AGS_0", "WSK"}, {"features.properties.OBJID", "features.properties.BEGINN", "features.properties.ADE", "features.properties.GF", "features.properties.BSG", "features.properties.ARS", "features.properties.AGS", "features.properties.SDV_ARS", "features.properties.GEN", "features.properties.BEZ", "features.properties.IBZ", "features.properties.BEM", "features.properties.NBD", "features.properties.SN_L", "features.properties.SN_R", "features.properties.SN_K", "features.properties.SN_V1", "features.properties.SN_V2", "features.properties.SN_G", "features.properties.FK_S3", "features.properties.NUTS", "features.properties.ARS_0", "features.properties.AGS_0", "features.properties.WSK"}),
-    #"Changed Type" = Table.TransformColumnTypes(#"Expanded features.properties",{{"type", type text}, {"features.type", type text}, {"features.geometry.type", type text}, {"features.geometry.coordinates", type any}, {"features.properties.OBJID", type text}, {"features.properties.BEGINN", type datetime}, {"features.properties.ADE", Int64.Type}, {"features.properties.GF", Int64.Type}, {"features.properties.BSG", Int64.Type}, {"features.properties.ARS", type text}, {"features.properties.AGS", Int64.Type}, {"features.properties.SDV_ARS", Int64.Type}, {"features.properties.GEN", type text}, {"features.properties.BEZ", type text}, {"features.properties.IBZ", Int64.Type}, {"features.properties.BEM", type text}, {"features.properties.NBD", type text}, {"features.properties.SN_L", Int64.Type}, {"features.properties.SN_R", Int64.Type}, {"features.properties.SN_K", Int64.Type}, {"features.properties.SN_V1", Int64.Type}, {"features.properties.SN_V2", Int64.Type}, {"features.properties.SN_G", Int64.Type}, {"features.properties.FK_S3", Int64.Type}, {"features.properties.NUTS", type text}, {"features.properties.ARS_0", Int64.Type}, {"features.properties.AGS_0", Int64.Type}, {"features.properties.WSK", type datetime}}),
-    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"type", "features.type", "features.geometry.type", "features.geometry.coordinates", "features.properties.OBJID", "features.properties.BEGINN", "features.properties.ADE", "features.properties.GF", "features.properties.BSG", "features.properties.AGS", "features.properties.SDV_ARS", "features.properties.IBZ", "features.properties.BEM", "features.properties.NBD", "features.properties.SN_L", "features.properties.SN_R", "features.properties.SN_K", "features.properties.SN_V1", "features.properties.SN_V2", "features.properties.SN_G", "features.properties.FK_S3", "features.properties.NUTS", "features.properties.ARS_0", "features.properties.AGS_0", "features.properties.WSK"}),
-    #"Removed Duplicates" = Table.Distinct(#"Removed Columns", {"features.properties.ARS"}),
-    #"Renamed Columns" = Table.RenameColumns(#"Removed Duplicates",{{"features.properties.ARS", "BundeslandID"}, {"features.properties.GEN", "Name"}, {"features.properties.BEZ", "Bezeichnung"}})
-in
-    #"Renamed Columns"
-```
+[Unicode](https://home.unicode.org) Charaktere werden mithilfe der DAX UNICHAR-Funktion dargestellt. Siehe [Wikipedia](https://en.wikipedia.org/wiki/List_of_Unicode_characters).
 
-```m
-let
-    Source = Json.Document(File.Contents("\path\to\landkreise_kreisfreie_staedte.json")),
-    #"Converted to Table" = Table.FromRecords({Source}),
-    #"Expanded features" = Table.ExpandListColumn(#"Converted to Table", "features"),
-    #"Expanded features1" = Table.ExpandRecordColumn(#"Expanded features", "features", {"type", "geometry", "properties"}, {"features.type", "features.geometry", "features.properties"}),
-    #"Expanded features.geometry" = Table.ExpandRecordColumn(#"Expanded features1", "features.geometry", {"type", "coordinates"}, {"features.geometry.type", "features.geometry.coordinates"}),
-    #"Expanded features.geometry.coordinates" = Table.ExpandListColumn(#"Expanded features.geometry", "features.geometry.coordinates"),
-    #"Expanded features.properties" = Table.ExpandRecordColumn(#"Expanded features.geometry.coordinates", "features.properties", {"OBJID", "BEGINN", "ADE", "GF", "BSG", "ARS", "AGS", "SDV_ARS", "GEN", "BEZ", "IBZ", "BEM", "NBD", "SN_L", "SN_R", "SN_K", "SN_V1", "SN_V2", "SN_G", "FK_S3", "NUTS", "ARS_0", "AGS_0", "WSK"}, {"features.properties.OBJID", "features.properties.BEGINN", "features.properties.ADE", "features.properties.GF", "features.properties.BSG", "features.properties.ARS", "features.properties.AGS", "features.properties.SDV_ARS", "features.properties.GEN", "features.properties.BEZ", "features.properties.IBZ", "features.properties.BEM", "features.properties.NBD", "features.properties.SN_L", "features.properties.SN_R", "features.properties.SN_K", "features.properties.SN_V1", "features.properties.SN_V2", "features.properties.SN_G", "features.properties.FK_S3", "features.properties.NUTS", "features.properties.ARS_0", "features.properties.AGS_0", "features.properties.WSK"}),
-    #"Changed Type" = Table.TransformColumnTypes(#"Expanded features.properties",{{"type", type text}, {"features.type", type text}, {"features.geometry.type", type text}, {"features.geometry.coordinates", type any}, {"features.properties.OBJID", type text}, {"features.properties.BEGINN", type datetime}, {"features.properties.ADE", Int64.Type}, {"features.properties.GF", Int64.Type}, {"features.properties.BSG", Int64.Type}, {"features.properties.ARS", type text}, {"features.properties.AGS", Int64.Type}, {"features.properties.SDV_ARS", Int64.Type}, {"features.properties.GEN", type text}, {"features.properties.BEZ", type text}, {"features.properties.IBZ", Int64.Type}, {"features.properties.BEM", type text}, {"features.properties.NBD", type text}, {"features.properties.SN_L", Int64.Type}, {"features.properties.SN_R", Int64.Type}, {"features.properties.SN_K", Int64.Type}, {"features.properties.SN_V1", Int64.Type}, {"features.properties.SN_V2", Int64.Type}, {"features.properties.SN_G", Int64.Type}, {"features.properties.FK_S3", type text}, {"features.properties.NUTS", type text}, {"features.properties.ARS_0", Int64.Type}, {"features.properties.AGS_0", Int64.Type}, {"features.properties.WSK", type datetime}}),
-    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"type", "features.type", "features.geometry.type", "features.geometry.coordinates", "features.properties.OBJID", "features.properties.BEGINN", "features.properties.ADE", "features.properties.GF", "features.properties.BSG", "features.properties.AGS", "features.properties.SDV_ARS", "features.properties.IBZ", "features.properties.BEM", "features.properties.NBD", "features.properties.SN_L", "features.properties.SN_R", "features.properties.SN_K", "features.properties.SN_V1", "features.properties.SN_V2", "features.properties.SN_G", "features.properties.FK_S3", "features.properties.NUTS", "features.properties.ARS_0", "features.properties.AGS_0", "features.properties.WSK"}),
-    #"Removed Duplicates" = Table.Distinct(#"Removed Columns", {"features.properties.ARS"}),
-    #"Renamed Columns" = Table.RenameColumns(#"Removed Duplicates",{{"features.properties.ARS", "KreisID"}, {"features.properties.GEN", "Name"}, {"features.properties.BEZ", "Bezeichnung"}}),
-    #"Added Custom" = Table.AddColumn(#"Renamed Columns", "BundeslandID", each Text.Range([KreisID], 0, 2))
-in
-    #"Added Custom"
-
-Der amtliche Regionalschlüssel (ARS) wird zum verlinken der Tabellen verwendet. Siehe Kapitel 2.1 der Dokumentation.
-
-In *Table View* die **Data Category** der Spalte *Name* zu *State or Province* und *County* entsprechend ändern.
-
-Außerdem,
-
-```m
-let
-    Source = Excel.Workbook(File.Contents("path\to\erwerbspersonen.xlsx"), null, true),
-    Table1_Table = Source{[Item="Table1",Kind="Table"]}[Data],
-    #"Changed Type" = Table.TransformColumnTypes(Table1_Table,{
-        {"Bundesland", type text}, {"KreisID", type text}, {"Name", type text}, {"Bezeichnung", type text}, {"Datum", type date}, 
-        {"Erwerbstätigleit", type text}, {"Insgesamt", Int64.Type}, {"Männer", Int64.Type}, {"Frauen", Int64.Type}, 
-        {"15 bis unter 25 Jahre", Int64.Type}, {"25 bis unter 55 Jahre", Int64.Type}, {"55 Jahre bis Regelaltersgrenze", Int64.Type}, 
-        {"Vollzeit", Int64.Type}, {"Teilzeit", Int64.Type}, {"Deutsche", Int64.Type}, {"Ausländer", Int64.Type}}),
-    #"Replaced Values" = Table.ReplaceValue(#"Changed Type", each [Name], each if [Bezeichnung] = "Kreisfreie Stadt" then Text.Combine({[Name], "Stadt"}, ", ") else [Name], Replacer.ReplaceText, {"Name"})
-in
-    #"Replaced Values"
-```
+| Symbol        |   Beschreibug | Unicode (Dezimal)   |
+| ------------- | ------------- | ------------------- |
+|   &#8512;     | Summenzeichen | 8512 |
 
 ## FAQ
