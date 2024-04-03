@@ -215,7 +215,6 @@ Icon Map kann entweder:
 - direkt aus AppSource [importiert](https://learn.microsoft.com/de-de/power-bi/developer/visuals/import-visual#import-a-power-bi-visual-directly-from-appsource) werden, oder
 - die neueste -test- Version der App in Power BI Desktop [installiert](https://learn.microsoft.com/de-de/power-bi/developer/visuals/import-visual#import-a-visual-file-from-your-local-computer-into-power-bi) werden.
 
-
 ## Unicode
 
 [Unicode](https://home.unicode.org) Charaktere werden mithilfe der DAX UNICHAR-Funktion dargestellt. Siehe [Wikipedia](https://en.wikipedia.org/wiki/List_of_Unicode_characters).
